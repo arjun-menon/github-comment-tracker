@@ -1,19 +1,16 @@
 // ==UserScript==
-// This script works on the PR page. Uses Parse to store data.
+// This script works on the PR page.
 // @match https://github.com/*
 // ==/UserScript==
 
-// Other file forwarders
-var Parse;
-var waitForKeyElements;
+const findAllThreads = function () {
+  const threads = [];
+  const d = $('#discussion_bucket');
 
-var findAllThreads = function () {
-  var threads = [];
-
-  $('#discussion_bucket .js-line-comments .js-comments-holder').each(function () {
-    var childComments = $(this).children('.js-comment');
+  d.find('.js-line-comments .js-comments-holder').each(function () {
+    const childComments = $(this).children('.js-comment');
     if (childComments.length > 0) {
-      var firstCommentChild = childComments.first()[0];
+      const firstCommentChild = childComments.first()[0];
       threads.push({
         id: firstCommentChild.id,
         comments: childComments,
@@ -22,7 +19,7 @@ var findAllThreads = function () {
     }
   });
 
-  $('#discussion_bucket .timeline-comment-wrapper .timeline-comment.js-comment').each(function () {
+  d.find('.timeline-comment-wrapper .timeline-comment.js-comment').each(function () {
     if (this.id && this.id.match(/^issuecomment/)) {
       threads.push({
         id: this.id,
@@ -35,8 +32,8 @@ var findAllThreads = function () {
   return threads;
 };
 
-var checkThreads = function () {
-  var newThreads = findAllThreads();
+const checkThreads = function () {
+  const newThreads = findAllThreads();
   if (_.isEqual(_.pluck(newThreads, 'id'), _.pluck(allThreads, 'id'))) {
     if (_.isEqual(_.pluck(newThreads, 'lastCommentId'), _.pluck(allThreads, 'lastCommentId'))) {
       return;
@@ -45,7 +42,7 @@ var checkThreads = function () {
   resetManipulations();
 };
 
-var resetManipulations = function () {
+const resetManipulations = function () {
   allThreads = findAllThreads();
 
   annotateWithParseInfo(allThreads).then(function () {
@@ -56,11 +53,9 @@ var resetManipulations = function () {
   });
 };
 
-var CommentTracker;
-var Settings;
-var appSettings;
+let CommentTracker;
 
-var main = function () {
+const main = function () {
   /* global chrome */
   chrome.storage.sync.get({
     polling: true
@@ -68,7 +63,7 @@ var main = function () {
     Parse.initialize("ghct");
     Parse.serverURL = 'https://ghct.herokuapp.com/1';
     CommentTracker = Parse.Object.extend('CommentTracker');
-    Settings = Parse.Object.extend('Settings');
+    const Settings = Parse.Object.extend('Settings');
 
     resetManipulations();
 
@@ -76,24 +71,23 @@ var main = function () {
     // Debounce both to only call checkThreads once, and to call with a slight
     // delay for better compatiblity with the WideGithub extension:
     // https://chrome.google.com/webstore/detail/wide-github/kaalofacklcidaampbokdplbklpeldpj
-    var debouncedCheckThreads = _.debounce(checkThreads, 100);
+    const debouncedCheckThreads = _.debounce(checkThreads, 100);
     waitForKeyElements('.comment', debouncedCheckThreads);
 
     if (items.polling) {
       new Parse.Query(Settings).get("bdWmF0aC6c").then(function (settings) {
-        appSettings = settings;
-        setInterval(resetManipulations, appSettings.get('pollInterval'));
+        setInterval(resetManipulations, settings.get('pollInterval'));
       });
     }
   });
 };
 
-var expandUnresolvedThreads =  function () {
+const expandUnresolvedThreads =  function () {
   _.each(allThreads, function (info) {
     if (!info.resolved) {
-      var id = info.id;
-      var elem = $('#' + id).first();
-      var container = elem.parents('.outdated-comment');
+      const id = info.id;
+      const elem = $('#' + id).first();
+      const container = elem.parents('.outdated-comment');
       if (container.length > 0) {
         container.removeClass('closed').addClass('open');
       }
@@ -101,16 +95,16 @@ var expandUnresolvedThreads =  function () {
   });
 };
 
-var allThreads;
-var initalCanBeMerged = false;
+let allThreads;
+let initalCanBeMerged = false;
 
-var allThreadsResolved = function () {
+const allThreadsResolved = function () {
   return _.all(allThreads, function (info) {
     return info.resolved;
   });
 };
 
-var updateMergeButton = function () {
+const updateMergeButton = function () {
   if (!initalCanBeMerged) {
     initalCanBeMerged = $('.js-merge-branch-action').hasClass('btn-primary');
   }
@@ -149,15 +143,15 @@ var updateMergeButton = function () {
   }
 };
 
-var annotateWithParseInfo = function (allThreads) {
-  var ids = _.pluck(allThreads, 'id');
-  var query = new Parse.Query(CommentTracker);
+const annotateWithParseInfo = function (allThreads) {
+  const ids = _.pluck(allThreads, 'id');
+  const query = new Parse.Query(CommentTracker);
   query.containedIn('commentId', ids);
 
   return query.find().then(function (results) {
     _.each(results, function (result) {
-      var id = result.get('commentId');
-      var info = _.findWhere(allThreads, {id: id});
+      const id = result.get('commentId');
+      const info = _.findWhere(allThreads, {id: id});
       if (info) {
         info.resolved = result.get('resolved') && result.get('lastCommentSeen') === info.lastCommentId;
         info.lastCommentSeen = result.get('lastCommentSeen');
@@ -167,23 +161,21 @@ var annotateWithParseInfo = function (allThreads) {
   });
 };
 
-var makeButton = function (elem, threadInfo) {
-  var $elem = $(elem);
-  $elem.find('.comment-track-action').remove();
+const makeButton = function (elem, threadInfo) {
+  const e = $(elem);
+  e.find('.comment-track-action').remove();
 
-  var actionSelector = '.review-comment-contents';
-  if ($elem.find(actionSelector).length === 0) {
+  let actionSelector = '.review-comment-contents';
+  if (e.find(actionSelector).length === 0) {
     actionSelector = '.timeline-comment-actions';
   }
 
-  var string;
   if (threadInfo.resolved) {
-    string = '<span class="octicon comment-track-action comment-track-unresolve"></span>';
-    $elem.find(actionSelector).prepend(string);
+    e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-unresolve"></span>');
 
-    $elem.find('.comment-track-unresolve').on('click', function (event) {
+    e.find('.comment-track-unresolve').on('click', function (event) {
       event.preventDefault();
-      var tracker = threadInfo.tracker;
+      const tracker = threadInfo.tracker;
       tracker.set('resolved', false);
       tracker.set('lastCommentSeen', null);
       tracker.save();
@@ -193,12 +185,11 @@ var makeButton = function (elem, threadInfo) {
       updateThread(threadInfo);
     });
   } else {
-    string = '<span class="octicon comment-track-action comment-track-resolve"></span>';
-    $elem.find(actionSelector).prepend(string);
+    e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-resolve"></span>');
 
-    $elem.find('.comment-track-resolve').on('click', function (event) {
+    e.find('.comment-track-resolve').on('click', function (event) {
       event.preventDefault();
-      var tracker = threadInfo.tracker || new CommentTracker();
+      const tracker = threadInfo.tracker || new CommentTracker();
 
       tracker.set('commentId', threadInfo.id);
       tracker.set('resolved', true);
@@ -214,13 +205,13 @@ var makeButton = function (elem, threadInfo) {
   }
 };
 
-var updateThread = function (info, options) {
+const updateThread = function (info, options) {
   options = options || {};
-  var id = info.id;
-  var elem = $('#' + id).first();
+  const id = info.id;
+  const elem = $('#' + id).first();
 
   if (!id.match(/^issuecomment/)) {
-    var threadComments = $(elem).parents('.js-comments-holder').children('.js-comment');
+    const threadComments = $(elem).parents('.js-comments-holder').children('.js-comment');
     threadComments.each(function () {
       makeButton(this, info);
     });
