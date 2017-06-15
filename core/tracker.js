@@ -52,9 +52,7 @@ const setListeners = function () {
           info.resolved = val.resolved && val.lastCommentSeen === info.lastCommentId;
           info.lastCommentSeen = val.lastCommentSeen;
         }
-        updateThread(info, {suppressMergeUpdate: true});
-        expandUnresolvedThread(info);
-        updateMergeButton();
+        updateThread(info);
       });
       info.listening = true;
     }
@@ -155,8 +153,7 @@ const makeButton = function (elem, info) {
   }
 };
 
-const updateThread = function (info, options) {
-  options = options || {};
+const updateThread = (info) => {
   const id = info.id;
   const elem = $('#' + id).first();
 
@@ -169,9 +166,8 @@ const updateThread = function (info, options) {
     makeButton(elem, info);
   }
 
-  if (!options.suppressMergeUpdate) {
-    updateMergeButton();
-  }
+  expandUnresolvedThread(info);
+  updateMergeButton();
 };
 
 main();
