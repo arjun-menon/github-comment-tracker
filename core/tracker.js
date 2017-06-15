@@ -66,29 +66,23 @@ const resetManipulations = function () {
 let CommentTracker;
 
 const main = function () {
-  /* global chrome */
-  chrome.storage.sync.get({
-    polling: true
-  }, function (items) {
-    Parse.initialize("ghct");
-    Parse.serverURL = 'https://ghct.herokuapp.com/1';
-    CommentTracker = Parse.Object.extend('CommentTracker');
-    const Settings = Parse.Object.extend('Settings');
+  Parse.initialize("ghct");
+  Parse.serverURL = 'https://ghct.herokuapp.com/1';
+  CommentTracker = Parse.Object.extend('CommentTracker');
+  const Settings = Parse.Object.extend('Settings');
 
-    resetManipulations();
+  resetManipulations();
 
-    // waitForKeyElements will trigger for *each* changed/added element.
-    // Debounce both to only call checkThreads once, and to call with a slight
-    // delay for better compatiblity with the WideGithub extension:
-    // https://chrome.google.com/webstore/detail/wide-github/kaalofacklcidaampbokdplbklpeldpj
-    const debouncedCheckThreads = _.debounce(checkThreads, 100);
-    waitForKeyElements('.comment', debouncedCheckThreads);
+  // waitForKeyElements will trigger for *each* changed/added element.
+  // Debounce both to only call checkThreads once, and to call with a slight
+  // delay for better compatiblity with the WideGithub extension:
+  // https://chrome.google.com/webstore/detail/wide-github/kaalofacklcidaampbokdplbklpeldpj
+  const debouncedCheckThreads = _.debounce(checkThreads, 100);
+  waitForKeyElements('.comment', debouncedCheckThreads);
 
-    if (items.polling) {
-      new Parse.Query(Settings).get("bdWmF0aC6c").then(function (settings) {
-        setInterval(resetManipulations, settings.get('pollInterval'));
-      });
-    }
+  // Polling:
+  new Parse.Query(Settings).get("bdWmF0aC6c").then(function (settings) {
+    setInterval(resetManipulations, settings.get('pollInterval'));
   });
 };
 

@@ -6,8 +6,7 @@
   "version": "1.1.6",
 
   "permissions": [
-    "https://github.com/",
-    "storage"
+    "https://github.com/"
   ],
 
   "content_scripts": [{
