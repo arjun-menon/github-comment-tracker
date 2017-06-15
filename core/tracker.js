@@ -52,28 +52,31 @@ const checkThreads = function () {
       return;
     }
   }
-  resetManipulations();
+  setListeners();
 };
 
-const resetManipulations = function () {
+const setListeners = function () {
   allThreads = findAllThreads();
 
-  Promise.all(allThreads.map(info => firebase.database().ref('testing_zone/' + info.id).once('value'))).then(snapshots => {
-    allThreads.forEach((info, i) => {
-      const result = snapshots[i].val();
-      if (result) {
-        info.resolved = result.resolved && result.lastCommentSeen === info.lastCommentId;
-        info.lastCommentSeen = result.lastCommentSeen;
-      }
-      updateThread(info, {suppressMergeUpdate: true});
-    });
-    expandUnresolvedThreads();
-    updateMergeButton();
+  allThreads.forEach(info => {
+    if (!info.listening) {
+      firebase.database().ref('testing_zone/' + info.id).on('value', snapshot => {
+        const val = snapshot.val();
+        if (val) {
+          info.resolved = val.resolved && val.lastCommentSeen === info.lastCommentId;
+          info.lastCommentSeen = val.lastCommentSeen;
+        }
+        updateThread(info, {suppressMergeUpdate: true});
+        expandUnresolvedThread(info);
+        updateMergeButton();
+      });
+      info.listening = true;
+    }
   });
 };
 
 const main = function () {
-  resetManipulations();
+  setListeners();
 
   // waitForKeyElements will trigger for *each* changed/added element.
   // Debounce both to only call checkThreads once, and to call with a slight
@@ -81,22 +84,17 @@ const main = function () {
   // https://chrome.google.com/webstore/detail/wide-github/kaalofacklcidaampbokdplbklpeldpj
   const debouncedCheckThreads = _.debounce(checkThreads, 100);
   waitForKeyElements('.comment', debouncedCheckThreads);
-
-  const pollInterval = 60000;
-  setInterval(resetManipulations, pollInterval);
 };
 
-const expandUnresolvedThreads =  function () {
-  _.each(allThreads, function (info) {
-    if (!info.resolved) {
-      const id = info.id;
-      const elem = $('#' + id).first();
-      const container = elem.parents('.outdated-comment');
-      if (container.length > 0) {
-        container.removeClass('closed').addClass('open');
-      }
+const expandUnresolvedThread =  (info) => {
+  if (!info.resolved) {
+    const id = info.id;
+    const elem = $('#' + id).first();
+    const container = elem.parents('.outdated-comment');
+    if (container.length > 0) {
+      container.removeClass('closed').addClass('open');
     }
-  });
+  }
 };
 
 const allThreadsResolved = function () {
