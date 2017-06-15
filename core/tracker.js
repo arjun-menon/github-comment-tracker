@@ -58,32 +58,21 @@ const checkThreads = function () {
 const resetManipulations = function () {
   allThreads = findAllThreads();
 
-  _.each(allThreads, function(info) {
-    firebase.database().ref('testing_zone/' + info.id).once('value').then(function(snapshot) {
-      const result = snapshot.val();
+  Promise.all(allThreads.map(info => firebase.database().ref('testing_zone/' + info.id).once('value'))).then(snapshots => {
+    allThreads.forEach((info, i) => {
+      const result = snapshots[i].val();
       if (result) {
         info.resolved = result.resolved && result.lastCommentSeen === info.lastCommentId;
         info.lastCommentSeen = result.lastCommentSeen;
       }
       updateThread(info, {suppressMergeUpdate: true});
     });
+    expandUnresolvedThreads();
+    updateMergeButton();
   });
-
-  // annotateWithParseInfo(allThreads).then(function () {
-  //   _.each(allThreads, function (info) { updateThread(info, {suppressMergeUpdate: true}); });
-  // }).then(function () {
-  //   expandUnresolvedThreads();
-  //   updateMergeButton();
-  // });
 };
 
-// let CommentTracker;
-
 const main = function () {
-  // Parse.initialize("ghct");
-  // Parse.serverURL = 'https://ghct.herokuapp.com/1';
-  // CommentTracker = Parse.Object.extend('CommentTracker');
-
   resetManipulations();
 
   // waitForKeyElements will trigger for *each* changed/added element.
@@ -155,24 +144,6 @@ const updateMergeButton = function () {
   }
 };
 
-// const annotateWithParseInfo = function (allThreads) {
-//   const ids = _.pluck(allThreads, 'id');
-//   const query = new Parse.Query(CommentTracker);
-//   query.containedIn('commentId', ids);
-//
-//   return query.find().then(function (results) {
-//     _.each(results, function (result) {
-//       const id = result.get('commentId');
-//       const info = _.findWhere(allThreads, {id: id});
-//       if (info) {
-//         info.resolved = result.get('resolved') && result.get('lastCommentSeen') === info.lastCommentId;
-//         info.lastCommentSeen = result.get('lastCommentSeen');
-//         info.tracker = result;
-//       }
-//     });
-//   });
-// };
-
 const makeButton = function (elem, threadInfo) {
   const e = $(elem);
   e.find('.comment-track-action').remove();
@@ -188,14 +159,7 @@ const makeButton = function (elem, threadInfo) {
     e.find('.comment-track-unresolve').on('click', function (event) {
       event.preventDefault();
 
-      // const tracker = threadInfo.tracker;
-      // tracker.set('resolved', false);
-      // tracker.set('lastCommentSeen', null);
-      // tracker.save();
-      firebase.database().ref('testing_zone/' + threadInfo.id).set({
-        resolved: false, lastCommentSeen: null
-      });
-
+      firebase.database().ref('testing_zone/' + threadInfo.id).set({resolved: false, lastCommentSeen: null});
       threadInfo.resolved = false;
 
       updateThread(threadInfo);
@@ -206,18 +170,8 @@ const makeButton = function (elem, threadInfo) {
     e.find('.comment-track-resolve').on('click', function (event) {
       event.preventDefault();
 
-      firebase.database().ref('testing_zone/' + threadInfo.id).set({
-        resolved: true, lastCommentSeen: threadInfo.lastCommentId
-      });
-
-      // const tracker = threadInfo.tracker || new CommentTracker();
-      // tracker.set('commentId', threadInfo.id);
-      // tracker.set('resolved', true);
-      // tracker.set('lastCommentSeen', threadInfo.lastCommentId);
-      // tracker.save();
-
+      firebase.database().ref('testing_zone/' + threadInfo.id).set({resolved: true, lastCommentSeen: threadInfo.lastCommentId});
       threadInfo.resolved = true;
-      // threadInfo.tracker = tracker;
 
       updateThread(threadInfo);
     });
