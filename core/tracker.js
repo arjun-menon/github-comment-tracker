@@ -1,17 +1,3 @@
-// ==UserScript==
-// This script works on the PR page.
-// @match https://github.com/*
-// ==/UserScript==
-
-const app = firebase.initializeApp({
-  apiKey: "AIzaSyBb_2bG5cUaW25MfCdaDP7l5HF8UbF2QR0",
-  authDomain: "ghct-79a7b.firebaseapp.com",
-  databaseURL: "https://ghct-79a7b.firebaseio.com",
-  projectId: "ghct-79a7b",
-  storageBucket: "ghct-79a7b.appspot.com",
-  messagingSenderId: "45909398186"
-});
-const database = firebase.database();
 
 const findAllThreads = function () {
   const threads = [];
@@ -60,7 +46,7 @@ const setListeners = function () {
 
   allThreads.forEach(info => {
     if (!info.listening) {
-      firebase.database().ref('testing_zone/' + info.id).on('value', snapshot => {
+      commentRef(info.id).on('value', snapshot => {
         const val = snapshot.val();
         if (val) {
           info.resolved = val.resolved && val.lastCommentSeen === info.lastCommentId;
@@ -142,7 +128,13 @@ const updateMergeButton = function () {
   }
 };
 
-const makeButton = function (elem, threadInfo) {
+const updateInfo = function(info, resolved, lastCommentSeen) {
+  commentRef(info.id).set({resolved, lastCommentSeen});
+  info.resolved = resolved;
+  updateThread(info);
+};
+
+const makeButton = function (elem, info) {
   const e = $(elem);
   e.find('.comment-track-action').remove();
 
@@ -151,27 +143,17 @@ const makeButton = function (elem, threadInfo) {
     actionSelector = '.timeline-comment-actions';
   }
 
-  if (threadInfo.resolved) {
+  if (info.resolved) {
     e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-unresolve"></span>');
-
     e.find('.comment-track-unresolve').on('click', function (event) {
       event.preventDefault();
-
-      firebase.database().ref('testing_zone/' + threadInfo.id).set({resolved: false, lastCommentSeen: null});
-      threadInfo.resolved = false;
-
-      updateThread(threadInfo);
+      updateInfo(info, false, null);
     });
   } else {
     e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-resolve"></span>');
-
     e.find('.comment-track-resolve').on('click', function (event) {
       event.preventDefault();
-
-      firebase.database().ref('testing_zone/' + threadInfo.id).set({resolved: true, lastCommentSeen: threadInfo.lastCommentId});
-      threadInfo.resolved = true;
-
-      updateThread(threadInfo);
+      updateInfo(info, true, info.lastCommentId);
     });
   }
 };
