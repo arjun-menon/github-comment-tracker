@@ -9,6 +9,8 @@
     "https://github.com/"
   ],
 
+  "content_security_policy": "script-src 'self' https://cdn.firebase.com https://*.firebaseio.com https://*.firebaseio-demo.com; object-src 'self'",
+
   "content_scripts": [{
     "matches": ["*://github.com/*/pull*"],
     "js": [

@@ -42,6 +42,9 @@ const findAllThreads = function () {
   return threads;
 };
 
+let allThreads;
+let initalCanBeMerged = false;
+
 const checkThreads = function () {
   const newThreads = findAllThreads();
   if (_.isEqual(_.pluck(newThreads, 'id'), _.pluck(allThreads, 'id'))) {
@@ -55,20 +58,31 @@ const checkThreads = function () {
 const resetManipulations = function () {
   allThreads = findAllThreads();
 
-  annotateWithParseInfo(allThreads).then(function () {
-    _.each(allThreads, function (info) { updateThread(info, {suppressMergeUpdate: true}); });
-  }).then(function () {
-    expandUnresolvedThreads();
-    updateMergeButton();
+  _.each(allThreads, function(info) {
+    firebase.database().ref('testing_zone/' + info.id).once('value').then(function(snapshot) {
+      const result = snapshot.val();
+      if (result) {
+        info.resolved = result.resolved && result.lastCommentSeen === info.lastCommentId;
+        info.lastCommentSeen = result.lastCommentSeen;
+      }
+      updateThread(info, {suppressMergeUpdate: true});
+    });
   });
+
+  // annotateWithParseInfo(allThreads).then(function () {
+  //   _.each(allThreads, function (info) { updateThread(info, {suppressMergeUpdate: true}); });
+  // }).then(function () {
+  //   expandUnresolvedThreads();
+  //   updateMergeButton();
+  // });
 };
 
-let CommentTracker;
+// let CommentTracker;
 
 const main = function () {
-  Parse.initialize("ghct");
-  Parse.serverURL = 'https://ghct.herokuapp.com/1';
-  CommentTracker = Parse.Object.extend('CommentTracker');
+  // Parse.initialize("ghct");
+  // Parse.serverURL = 'https://ghct.herokuapp.com/1';
+  // CommentTracker = Parse.Object.extend('CommentTracker');
 
   resetManipulations();
 
@@ -95,9 +109,6 @@ const expandUnresolvedThreads =  function () {
     }
   });
 };
-
-let allThreads;
-let initalCanBeMerged = false;
 
 const allThreadsResolved = function () {
   return _.all(allThreads, function (info) {
@@ -144,23 +155,23 @@ const updateMergeButton = function () {
   }
 };
 
-const annotateWithParseInfo = function (allThreads) {
-  const ids = _.pluck(allThreads, 'id');
-  const query = new Parse.Query(CommentTracker);
-  query.containedIn('commentId', ids);
-
-  return query.find().then(function (results) {
-    _.each(results, function (result) {
-      const id = result.get('commentId');
-      const info = _.findWhere(allThreads, {id: id});
-      if (info) {
-        info.resolved = result.get('resolved') && result.get('lastCommentSeen') === info.lastCommentId;
-        info.lastCommentSeen = result.get('lastCommentSeen');
-        info.tracker = result;
-      }
-    });
-  });
-};
+// const annotateWithParseInfo = function (allThreads) {
+//   const ids = _.pluck(allThreads, 'id');
+//   const query = new Parse.Query(CommentTracker);
+//   query.containedIn('commentId', ids);
+//
+//   return query.find().then(function (results) {
+//     _.each(results, function (result) {
+//       const id = result.get('commentId');
+//       const info = _.findWhere(allThreads, {id: id});
+//       if (info) {
+//         info.resolved = result.get('resolved') && result.get('lastCommentSeen') === info.lastCommentId;
+//         info.lastCommentSeen = result.get('lastCommentSeen');
+//         info.tracker = result;
+//       }
+//     });
+//   });
+// };
 
 const makeButton = function (elem, threadInfo) {
   const e = $(elem);
@@ -176,10 +187,14 @@ const makeButton = function (elem, threadInfo) {
 
     e.find('.comment-track-unresolve').on('click', function (event) {
       event.preventDefault();
-      const tracker = threadInfo.tracker;
-      tracker.set('resolved', false);
-      tracker.set('lastCommentSeen', null);
-      tracker.save();
+
+      // const tracker = threadInfo.tracker;
+      // tracker.set('resolved', false);
+      // tracker.set('lastCommentSeen', null);
+      // tracker.save();
+      firebase.database().ref('testing_zone/' + threadInfo.id).set({
+        resolved: false, lastCommentSeen: null
+      });
 
       threadInfo.resolved = false;
 
@@ -190,16 +205,19 @@ const makeButton = function (elem, threadInfo) {
 
     e.find('.comment-track-resolve').on('click', function (event) {
       event.preventDefault();
-      const tracker = threadInfo.tracker || new CommentTracker();
 
-      tracker.set('commentId', threadInfo.id);
-      tracker.set('resolved', true);
-      tracker.set('lastCommentSeen', threadInfo.lastCommentId);
+      firebase.database().ref('testing_zone/' + threadInfo.id).set({
+        resolved: true, lastCommentSeen: threadInfo.lastCommentId
+      });
 
-      tracker.save();
+      // const tracker = threadInfo.tracker || new CommentTracker();
+      // tracker.set('commentId', threadInfo.id);
+      // tracker.set('resolved', true);
+      // tracker.set('lastCommentSeen', threadInfo.lastCommentId);
+      // tracker.save();
 
       threadInfo.resolved = true;
-      threadInfo.tracker = tracker;
+      // threadInfo.tracker = tracker;
 
       updateThread(threadInfo);
     });
