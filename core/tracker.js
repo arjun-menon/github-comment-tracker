@@ -29,7 +29,7 @@ const findAllThreads = function () {
 };
 
 let allThreads;
-let initalCanBeMerged = false;
+let canBeMerged = false;
 
 const checkThreads = function () {
   const newThreads = findAllThreads();
@@ -62,6 +62,8 @@ const setListeners = function () {
 };
 
 const main = function () {
+  canBeMerged = $('.js-merge-branch-action').hasClass('btn-primary');
+
   setListeners();
 
   // waitForKeyElements will trigger for *each* changed/added element.
@@ -90,12 +92,7 @@ const allThreadsResolved = function () {
 };
 
 const updateMergeButton = function () {
-  if (!initalCanBeMerged) {
-    initalCanBeMerged = $('.js-merge-branch-action').hasClass('btn-primary');
-  }
-  $('.comment-track-status').remove();
-
-  if (initalCanBeMerged) {
+  if (canBeMerged) {
     if (allThreadsResolved()) {
       // Make button green
       $('.js-merge-branch-action').addClass('btn-primary');
