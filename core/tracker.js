@@ -28,13 +28,10 @@ const findAllThreads = function () {
   return threads;
 };
 
-let allThreads;
-let canBeMerged = false;
-
 const checkThreads = function () {
   const newThreads = findAllThreads();
-  if (_.isEqual(_.pluck(newThreads, 'id'), _.pluck(allThreads, 'id'))) {
-    if (_.isEqual(_.pluck(newThreads, 'lastCommentId'), _.pluck(allThreads, 'lastCommentId'))) {
+  if (_.isEqual(_.pluck(newThreads, 'id'), _.pluck(globals.allThreads, 'id'))) {
+    if (_.isEqual(_.pluck(newThreads, 'lastCommentId'), _.pluck(globals.allThreads, 'lastCommentId'))) {
       return;
     }
   }
@@ -42,9 +39,9 @@ const checkThreads = function () {
 };
 
 const setListeners = function () {
-  allThreads = findAllThreads();
+  globals.allThreads = findAllThreads();
 
-  allThreads.forEach(info => {
+  globals.allThreads.forEach(info => {
     if (!info.listening) {
       commentRef(info.id).on('value', snapshot => {
         const val = snapshot.val();
@@ -60,8 +57,6 @@ const setListeners = function () {
 };
 
 const main = function () {
-  canBeMerged = $('.js-merge-branch-action').hasClass('btn-primary');
-
   setListeners();
 
   // waitForKeyElements will trigger for *each* changed/added element.
@@ -84,13 +79,13 @@ const expandUnresolvedThread =  (info) => {
 };
 
 const allThreadsResolved = function () {
-  return _.all(allThreads, function (info) {
+  return _.all(globals.allThreads, function (info) {
     return info.resolved;
   });
 };
 
 const updateMergeButton = function () {
-  if (canBeMerged) {
+  if (globals.canBeMerged) {
     if (allThreadsResolved()) {
       // Make button green
       $('.js-merge-branch-action').addClass('btn-primary');

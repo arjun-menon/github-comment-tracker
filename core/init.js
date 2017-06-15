@@ -12,3 +12,10 @@ const database = firebase.database();
 const commentRef = function(commentId) {
   return database.ref('testing_zone/' + commentId);
 };
+
+const globals = {
+  allThreads: [],
+  canBeMerged: false
+};
+
+globals.canBeMerged = $('.js-merge-branch-action').hasClass('btn-primary');
