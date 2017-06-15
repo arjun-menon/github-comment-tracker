@@ -69,7 +69,6 @@ const main = function () {
   Parse.initialize("ghct");
   Parse.serverURL = 'https://ghct.herokuapp.com/1';
   CommentTracker = Parse.Object.extend('CommentTracker');
-  const Settings = Parse.Object.extend('Settings');
 
   resetManipulations();
 
@@ -80,10 +79,8 @@ const main = function () {
   const debouncedCheckThreads = _.debounce(checkThreads, 100);
   waitForKeyElements('.comment', debouncedCheckThreads);
 
-  // Polling:
-  new Parse.Query(Settings).get("bdWmF0aC6c").then(function (settings) {
-    setInterval(resetManipulations, settings.get('pollInterval'));
-  });
+  const pollInterval = 60000;
+  setInterval(resetManipulations, pollInterval);
 };
 
 const expandUnresolvedThreads =  function () {
