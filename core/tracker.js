@@ -28,20 +28,14 @@ const findAllThreads = function () {
   return threads;
 };
 
-const checkThreads = function () {
-  const newThreads = findAllThreads();
-  if (_.isEqual(_.pluck(newThreads, 'id'), _.pluck(globals.allThreads, 'id'))) {
-    if (_.isEqual(_.pluck(newThreads, 'lastCommentId'), _.pluck(globals.allThreads, 'lastCommentId'))) {
-      return;
-    }
-  }
-  setListeners();
-};
-
 const setListeners = function () {
-  globals.allThreads = findAllThreads();
+  const allThreads = findAllThreads();
 
-  globals.allThreads.forEach(info => {
+  const areAllResolved = () => {
+    return _.all(allThreads, info => info.resolved);
+  };
+
+  allThreads.forEach(info => {
     if (!info.listening) {
       commentRef(info.id).on('value', snapshot => {
         const val = snapshot.val();
@@ -50,6 +44,8 @@ const setListeners = function () {
           info.lastCommentSeen = val.lastCommentSeen;
         }
         updateThread(info);
+        expandUnresolvedThread(info);
+        updateMergeButton(areAllResolved());
       });
       info.listening = true;
     }
@@ -63,7 +59,7 @@ const main = function () {
   // Debounce both to only call checkThreads once, and to call with a slight
   // delay for better compatiblity with the WideGithub extension:
   // https://chrome.google.com/webstore/detail/wide-github/kaalofacklcidaampbokdplbklpeldpj
-  const debouncedCheckThreads = _.debounce(checkThreads, 100);
+  const debouncedCheckThreads = _.debounce(setListeners, 100);
   waitForKeyElements('.comment', debouncedCheckThreads);
 };
 
@@ -78,15 +74,10 @@ const expandUnresolvedThread =  (info) => {
   }
 };
 
-const allThreadsResolved = function () {
-  return _.all(globals.allThreads, function (info) {
-    return info.resolved;
-  });
-};
-
-const updateMergeButton = function () {
-  if (globals.canBeMerged) {
-    if (allThreadsResolved()) {
+const updateMergeButton = function (allResolved) {
+  $('.comment-track-status').remove();
+  if (canBeMerged) {
+    if (allResolved) {
       // Make button green
       $('.js-merge-branch-action').addClass('btn-primary');
       $('.branch-action').addClass('branch-action-state-clean').removeClass('branch-action-state-dirty');
@@ -102,7 +93,7 @@ const updateMergeButton = function () {
       $('.branch-action-item-icon').removeClass('completeness-indicator-success').addClass('completeness-indicator-problem').html('<svg aria-hidden="true" class="octicon octicon-alert" height="16" role="img" version="1.1" viewBox="0 0 16 16" width="16"><path d="M15.72 12.5l-6.85-11.98C8.69 0.21 8.36 0.02 8 0.02s-0.69 0.19-0.87 0.5l-6.85 11.98c-0.18 0.31-0.18 0.69 0 1C0.47 13.81 0.8 14 1.15 14h13.7c0.36 0 0.69-0.19 0.86-0.5S15.89 12.81 15.72 12.5zM9 12H7V10h2V12zM9 9H7V5h2V9z"></path></svg>');
     }
   } else {
-    if (!allThreadsResolved()) {
+    if (!allResolved) {
       $('.merge-message').before(
         '<div class="branch-action-item comment-track-status">' +
         '    <div class="branch-action-item-icon completeness-indicator completeness-indicator-problem">' +
@@ -160,9 +151,6 @@ const updateThread = (info) => {
   } else {
     makeButton(elem, info);
   }
-
-  expandUnresolvedThread(info);
-  updateMergeButton();
 };
 
 main();
