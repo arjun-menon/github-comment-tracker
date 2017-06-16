@@ -22,7 +22,6 @@
       "lib/firebase.js",
       "lib/firebase-app.js",
       "lib/firebase-database.js",
-      "core/init.js",
       "core/waitForKeyElements.js",
       "core/tracker.js"
     ],

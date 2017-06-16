@@ -1,5 +1,5 @@
 
-const findAllThreads = function () {
+const findAllThreads = () => {
   const threads = [];
   const d = $('#discussion_bucket');
 
@@ -28,13 +28,10 @@ const findAllThreads = function () {
   return threads;
 };
 
-const setListeners = function () {
+const setListeners = () => {
+  const canBeMerged = $('.js-merge-branch-action').hasClass('btn-primary');
   const allThreads = findAllThreads();
-
-  const areAllResolved = () => {
-    return _.all(allThreads, info => info.resolved);
-  };
-
+  const areAllResolved = () => _.all(allThreads, info => info.resolved);
   allThreads.forEach(info => {
     if (!info.listening) {
       commentRef(info.id).on('value', snapshot => {
@@ -45,14 +42,15 @@ const setListeners = function () {
         }
         updateThread(info);
         expandUnresolvedThread(info);
-        updateMergeButton(areAllResolved());
+        updateMergeButton(canBeMerged, areAllResolved());
       });
       info.listening = true;
     }
   });
 };
 
-const main = function () {
+const main = () => {
+  initFirebase();
   setListeners();
 
   // waitForKeyElements will trigger for *each* changed/added element.
@@ -74,7 +72,7 @@ const expandUnresolvedThread =  (info) => {
   }
 };
 
-const updateMergeButton = function (allResolved) {
+const updateMergeButton = (canBeMerged, allResolved) => {
   $('.comment-track-status').remove();
   if (canBeMerged) {
     if (allResolved) {
@@ -109,13 +107,13 @@ const updateMergeButton = function (allResolved) {
   }
 };
 
-const updateInfo = function(info, resolved, lastCommentSeen) {
+const updateInfo = (info, resolved, lastCommentSeen) => {
   commentRef(info.id).set({resolved, lastCommentSeen});
   info.resolved = resolved;
   updateThread(info);
 };
 
-const makeButton = function (elem, info) {
+const makeButton = (elem, info) => {
   const e = $(elem);
   e.find('.comment-track-action').remove();
 
@@ -151,6 +149,21 @@ const updateThread = (info) => {
   } else {
     makeButton(elem, info);
   }
+};
+
+const commentRef = function(commentId) {
+  return firebase.database().ref('testing_zone/' + commentId);
+};
+
+const initFirebase = () => {
+  firebase.initializeApp({
+    apiKey: "AIzaSyBb_2bG5cUaW25MfCdaDP7l5HF8UbF2QR0",
+    authDomain: "ghct-79a7b.firebaseapp.com",
+    databaseURL: "https://ghct-79a7b.firebaseio.com",
+    projectId: "ghct-79a7b",
+    storageBucket: "ghct-79a7b.appspot.com",
+    messagingSenderId: "45909398186"
+  });
 };
 
 main();
