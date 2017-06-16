@@ -31,7 +31,6 @@ const findAllThreads = () => {
 const setListeners = () => {
   const canBeMerged = $('.js-merge-branch-action').hasClass('btn-primary');
   const allThreads = findAllThreads();
-  const areAllResolved = () => _.all(allThreads, info => info.resolved);
   allThreads.forEach(info => {
     if (!info.listening) {
       commentRef(info.id).on('value', snapshot => {
@@ -42,7 +41,7 @@ const setListeners = () => {
         }
         updateThread(info);
         expandUnresolvedThread(info);
-        updateMergeButton(canBeMerged, areAllResolved());
+        updateMergeButton(canBeMerged, allThreads.every(info => info.resolved));
       });
       info.listening = true;
     }
