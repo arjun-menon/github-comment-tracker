@@ -1,6 +1,5 @@
 
-const findAllComments = () => {
-  const threads = []
+const setListeners = () => {
   const discussionBucket = document.getElementById('discussion_bucket')
   const discussionThreads = discussionBucket.querySelectorAll('.js-line-comments > .js-comments-holder')
   const issueComments = discussionBucket.querySelectorAll('.timeline-comment-wrapper > .timeline-comment.js-comment')
@@ -10,42 +9,32 @@ const findAllComments = () => {
     if (comments.length > 0 && el.tracked !== comments.length) {
       const firstComment = comments[0]
       const lastComment = comments[comments.length - 1]
-      threads.push({
-        id: firstComment.id,
-        lastCommentId: lastComment.id
-      })
+      hookComment({id: firstComment.id, lastCommentId: lastComment.id})
       el.tracked = comments.length
     }
   })
 
   issueComments.forEach((el) => {
     if (el.id && el.id.match(/^issuecomment/) && !el.tracked) {
-      threads.push({
-        id: el.id,
-        lastCommentId: el.id
-      })
+      hookComment({id: el.id, lastCommentId: el.id})
       el.tracked = true
     }
   })
-
-  return threads
 }
 
-const setListeners = () => {
-  findAllComments().forEach(comment => {
-    commentRef(comment.id).on('value', snapshot => {
-      const val = snapshot.val()
-      if (val) {
-        comment.resolved = val.resolved && val.lastCommentSeen === comment.lastCommentId
-        comment.lastCommentSeen = val.lastCommentSeen
-      }
-      updateThread(comment)
-      expandUnresolvedThread(comment)
+const hookComment = comment => {
+  commentRef(comment.id).on('value', snapshot => {
+    const val = snapshot.val()
+    if (val) {
+      comment.resolved = val.resolved && val.lastCommentSeen === comment.lastCommentId
+      comment.lastCommentSeen = val.lastCommentSeen
+    }
+    updateThread(comment)
+    expandUnresolvedThread(comment)
 
-      const unresolvedCommentCount = document.getElementById('discussion_bucket')
-        .getElementsByClassName('comment-track-resolve').length
-      updateMergeButton(unresolvedCommentCount > 0)
-    })
+    const unresolvedCommentCount = document.getElementById('discussion_bucket')
+      .getElementsByClassName('comment-track-resolve').length
+    updateMergeButton(unresolvedCommentCount > 0)
   })
 }
 
