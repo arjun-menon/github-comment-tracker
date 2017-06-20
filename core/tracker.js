@@ -1,26 +1,27 @@
 
 const findAllThreads = () => {
   const threads = [];
-  const d = $('#discussion_bucket');
+  const discussionBucket = document.getElementById('discussion_bucket');
+  const discussionThreads = discussionBucket.querySelectorAll('.js-line-comments > .js-comments-holder');
+  const issueComments = discussionBucket.querySelectorAll('.timeline-comment-wrapper > .timeline-comment.js-comment');
 
-  d.find('.js-line-comments .js-comments-holder').each(function () {
-    const childComments = $(this).children('.js-comment');
-    if (childComments.length > 0) {
-      const firstCommentChild = childComments.first()[0];
+  discussionThreads.forEach((el) => {
+    const comments = el.getElementsByClassName('js-comment');
+    if (comments.length > 0) {
+      const firstComment = comments[0];
+      const lastComment = comments[comments.length - 1];
       threads.push({
-        id: firstCommentChild.id,
-        comments: childComments,
-        lastCommentId: childComments.last()[0].id,
+        id: firstComment.id,
+        lastCommentId: lastComment.id,
       });
     }
   });
 
-  d.find('.timeline-comment-wrapper .timeline-comment.js-comment').each(function () {
-    if (this.id && this.id.match(/^issuecomment/)) {
+  issueComments.forEach((el) => {
+    if (el.id && el.id.match(/^issuecomment/)) {
       threads.push({
-        id: this.id,
-        comments: $(this),
-        lastCommentId: this.id,
+        id: el.id,
+        lastCommentId: el.id,
       });
     }
   });
@@ -87,9 +88,9 @@ const updateMergeButton = (unresolved) => {
 };
 
 const findMergeButton = () => {
-  const mergeabilityDetailsDivs = document.querySelectorAll('.mergeability-details');
+  const mergeabilityDetailsDivs = document.getElementsByClassName('mergeability-details');
   if (mergeabilityDetailsDivs.length > 0) {
-    const mergeMessageDivs = mergeabilityDetailsDivs[0].querySelectorAll('.merge-message');
+    const mergeMessageDivs = mergeabilityDetailsDivs[0].getElementsByClassName('merge-message');
     if (mergeMessageDivs.length > 0)
       return mergeMessageDivs[0];
   }
