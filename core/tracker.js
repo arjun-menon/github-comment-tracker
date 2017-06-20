@@ -1,5 +1,5 @@
 
-const findAllThreads = () => {
+const findAllComments = () => {
   const threads = [];
   const discussionBucket = document.getElementById('discussion_bucket');
   const discussionThreads = discussionBucket.querySelectorAll('.js-line-comments > .js-comments-holder');
@@ -7,22 +7,24 @@ const findAllThreads = () => {
 
   discussionThreads.forEach((el) => {
     const comments = el.getElementsByClassName('js-comment');
-    if (comments.length > 0) {
+    if (comments.length > 0 && el.tracked != comments.length) {
       const firstComment = comments[0];
       const lastComment = comments[comments.length - 1];
       threads.push({
         id: firstComment.id,
         lastCommentId: lastComment.id,
       });
+      el.tracked = comments.length;
     }
   });
 
   issueComments.forEach((el) => {
-    if (el.id && el.id.match(/^issuecomment/)) {
+    if (el.id && el.id.match(/^issuecomment/) && !el.tracked) {
       threads.push({
         id: el.id,
         lastCommentId: el.id,
       });
+      el.tracked = true;
     }
   });
 
@@ -30,21 +32,19 @@ const findAllThreads = () => {
 };
 
 const setListeners = () => {
-  const allThreads = findAllThreads();
-  allThreads.forEach(info => {
-    if (!info.listening) {
-      commentRef(info.id).on('value', snapshot => {
-        const val = snapshot.val();
-        if (val) {
-          info.resolved = val.resolved && val.lastCommentSeen === info.lastCommentId;
-          info.lastCommentSeen = val.lastCommentSeen;
-        }
-        updateThread(info);
-        expandUnresolvedThread(info);
-        updateMergeButton(allThreads.some(info => !info.resolved));
-      });
-      info.listening = true;
-    }
+  const allComments = findAllComments();
+  console.log(`Invoked at: ${(new Date).getTime()/1000} with ${allComments.length} items`);
+  allComments.forEach(comment => {
+    commentRef(comment.id).on('value', snapshot => {
+      const val = snapshot.val();
+      if (val) {
+        comment.resolved = val.resolved && val.lastCommentSeen === comment.lastCommentId;
+        comment.lastCommentSeen = val.lastCommentSeen;
+      }
+      updateThread(comment);
+      expandUnresolvedThread(comment);
+      updateMergeButton(allComments.some(info => !info.resolved));
+    });
   });
 };
 
@@ -52,12 +52,12 @@ const main = () => {
   initFirebase();
   setListeners();
 
-  // waitForKeyElements will trigger for *each* changed/added element.
-  // Debounce both to only call checkThreads once, and to call with a slight
-  // delay for better compatiblity with the WideGithub extension:
-  // https://chrome.google.com/webstore/detail/wide-github/kaalofacklcidaampbokdplbklpeldpj
-  const debouncedCheckThreads = _.debounce(setListeners, 100);
-  waitForKeyElements('.comment', debouncedCheckThreads);
+  Rx.Observable.create((observer) => {
+    observer.next();
+    new MutationObserver(() => observer.next()).observe(
+        document.getElementById('discussion_bucket'),
+        {childList: true, attributes: false, characterData: false, subtree: true});
+  }).debounceTime(500).subscribe(setListeners);
 };
 
 const expandUnresolvedThread =  (info) => {
