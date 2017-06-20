@@ -88,12 +88,6 @@ const findMergeButton = () => {
   return null
 }
 
-const updateInfo = (info, resolved, lastCommentSeen) => {
-  commentRef(info.id).set({resolved, lastCommentSeen})
-  info.resolved = resolved
-  updateThread(info)
-}
-
 const makeButton = (elem, info) => {
   const e = $(elem)
   e.find('.comment-track-action').remove()
@@ -107,13 +101,19 @@ const makeButton = (elem, info) => {
     e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-unresolve"></span>')
     e.find('.comment-track-unresolve').on('click', function (event) {
       event.preventDefault()
-      updateInfo(info, false, null)
+
+      commentRef(info.id).set({resolved: false, lastCommentSeen: null})
+      info.resolved = false
+      updateThread(info)
     })
   } else {
     e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-resolve"></span>')
     e.find('.comment-track-resolve').on('click', function (event) {
       event.preventDefault()
-      updateInfo(info, true, info.lastCommentId)
+
+      commentRef(info.id).set({resolved: true, lastCommentSeen: info.lastCommentId})
+      info.resolved = true
+      updateThread(info)
     })
   }
 }
