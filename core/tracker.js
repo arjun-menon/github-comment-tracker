@@ -9,31 +9,28 @@ const setListeners = () => {
     if (comments.length > 0 && el.tracked !== comments.length) {
       const firstComment = comments[0]
       const lastComment = comments[comments.length - 1]
-      hookComment({id: firstComment.id, lastCommentId: lastComment.id})
+      hookComment(firstComment.id, lastComment.id)
       el.tracked = comments.length
     }
   })
 
   issueComments.forEach((el) => {
     if (el.id && el.id.match(/^issuecomment/) && !el.tracked) {
-      hookComment({id: el.id, lastCommentId: el.id})
+      hookComment(el.id, el.id)
       el.tracked = true
     }
   })
 }
 
-const hookComment = comment => {
-  commentRef(comment.id).on('value', snapshot => {
+const hookComment = (id, lastCommentId) => {
+  commentRef(id).on('value', snapshot => {
     const val = snapshot.val()
-    if (val) {
-      comment.resolved = val.resolved && val.lastCommentSeen === comment.lastCommentId
-      comment.lastCommentSeen = val.lastCommentSeen
-    }
+    const resolved = val && val.resolved && val.lastCommentSeen === lastCommentId
 
-    updateThread(comment.id, comment.resolved, comment.lastCommentId)
+    updateThread(id, resolved, lastCommentId)
 
-    if (!comment.resolved) {
-      expandUnresolvedThread(comment.id)
+    if (!resolved) {
+      expandUnresolvedThread(id)
     }
 
     const unresolvedCommentCount = document.getElementById('discussion_bucket')
