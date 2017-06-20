@@ -32,9 +32,7 @@ const findAllComments = () => {
 }
 
 const setListeners = () => {
-  const allComments = findAllComments()
-  console.log(`Invoked at: ${(new Date()).getTime() / 1000} with ${allComments.length} items`)
-  allComments.forEach(comment => {
+  findAllComments().forEach(comment => {
     commentRef(comment.id).on('value', snapshot => {
       const val = snapshot.val()
       if (val) {
@@ -43,7 +41,10 @@ const setListeners = () => {
       }
       updateThread(comment)
       expandUnresolvedThread(comment)
-      updateMergeButton(allComments.some(info => !info.resolved))
+
+      const unresolvedCommentCount = document.getElementById('discussion_bucket')
+        .getElementsByClassName('comment-track-resolve').length
+      updateMergeButton(unresolvedCommentCount > 0)
     })
   })
 }
