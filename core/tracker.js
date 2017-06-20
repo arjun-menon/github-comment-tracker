@@ -30,7 +30,7 @@ const hookComment = comment => {
       comment.lastCommentSeen = val.lastCommentSeen
     }
 
-    updateThread(comment)
+    updateThread(comment.id, comment.resolved, comment.lastCommentId)
 
     if (!comment.resolved) {
       expandUnresolvedThread(comment.id)
@@ -88,7 +88,7 @@ const findMergeButton = () => {
   return null
 }
 
-const makeButton = (elem, info) => {
+const makeButton = (elem, id, resolved, lastCommentSeen) => {
   const e = $(elem)
   e.find('.comment-track-action').remove()
 
@@ -97,38 +97,31 @@ const makeButton = (elem, info) => {
     actionSelector = '.timeline-comment-actions'
   }
 
-  if (info.resolved) {
+  if (resolved) {
     e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-unresolve"></span>')
     e.find('.comment-track-unresolve').on('click', function (event) {
       event.preventDefault()
-
-      commentRef(info.id).set({resolved: false, lastCommentSeen: null})
-      info.resolved = false
-      updateThread(info)
+      commentRef(id).set({resolved: false, lastCommentSeen: null})
     })
   } else {
     e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-resolve"></span>')
     e.find('.comment-track-resolve').on('click', function (event) {
       event.preventDefault()
-
-      commentRef(info.id).set({resolved: true, lastCommentSeen: info.lastCommentId})
-      info.resolved = true
-      updateThread(info)
+      commentRef(id).set({resolved: true, lastCommentSeen})
     })
   }
 }
 
-const updateThread = (info) => {
-  const id = info.id
+const updateThread = (id, resolved, lastCommentSeen) => {
   const elem = $('#' + id).first()
 
   if (!id.match(/^issuecomment/)) {
     const threadComments = $(elem).parents('.js-comments-holder').children('.js-comment')
     threadComments.each(function () {
-      makeButton(this, info)
+      makeButton(this, id, resolved, lastCommentSeen)
     })
   } else {
-    makeButton(elem, info)
+    makeButton(elem, id, resolved, lastCommentSeen)
   }
 }
 
