@@ -29,8 +29,12 @@ const hookComment = comment => {
       comment.resolved = val.resolved && val.lastCommentSeen === comment.lastCommentId
       comment.lastCommentSeen = val.lastCommentSeen
     }
+
     updateThread(comment)
-    expandUnresolvedThread(comment)
+
+    if (!comment.resolved) {
+      expandUnresolvedThread(comment.id)
+    }
 
     const unresolvedCommentCount = document.getElementById('discussion_bucket')
       .getElementsByClassName('comment-track-resolve').length
@@ -50,14 +54,11 @@ const main = () => {
   }).debounceTime(500).subscribe(setListeners)
 }
 
-const expandUnresolvedThread = (info) => {
-  if (!info.resolved) {
-    const id = info.id
-    const elem = $('#' + id).first()
-    const container = elem.parents('.outdated-comment')
-    if (container.length > 0) {
-      container.removeClass('closed').addClass('open')
-    }
+const expandUnresolvedThread = id => {
+  const elem = $('#' + id).first()
+  const container = elem.parents('.outdated-comment')
+  if (container.length > 0) {
+    container.removeClass('closed').addClass('open')
   }
 }
 
