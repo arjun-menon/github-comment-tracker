@@ -12,7 +12,10 @@
 
   "globals": {
     "document": true,
-    "window": true
+    "window": true,
+    "firebase": true,
+    "Rx": true,
+    "$": true
   },
 
   "rules": {

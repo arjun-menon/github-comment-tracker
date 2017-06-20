@@ -1,79 +1,79 @@
 
 const findAllComments = () => {
-  const threads = [];
-  const discussionBucket = document.getElementById('discussion_bucket');
-  const discussionThreads = discussionBucket.querySelectorAll('.js-line-comments > .js-comments-holder');
-  const issueComments = discussionBucket.querySelectorAll('.timeline-comment-wrapper > .timeline-comment.js-comment');
+  const threads = []
+  const discussionBucket = document.getElementById('discussion_bucket')
+  const discussionThreads = discussionBucket.querySelectorAll('.js-line-comments > .js-comments-holder')
+  const issueComments = discussionBucket.querySelectorAll('.timeline-comment-wrapper > .timeline-comment.js-comment')
 
   discussionThreads.forEach((el) => {
-    const comments = el.getElementsByClassName('js-comment');
-    if (comments.length > 0 && el.tracked != comments.length) {
-      const firstComment = comments[0];
-      const lastComment = comments[comments.length - 1];
+    const comments = el.getElementsByClassName('js-comment')
+    if (comments.length > 0 && el.tracked !== comments.length) {
+      const firstComment = comments[0]
+      const lastComment = comments[comments.length - 1]
       threads.push({
         id: firstComment.id,
-        lastCommentId: lastComment.id,
-      });
-      el.tracked = comments.length;
+        lastCommentId: lastComment.id
+      })
+      el.tracked = comments.length
     }
-  });
+  })
 
   issueComments.forEach((el) => {
     if (el.id && el.id.match(/^issuecomment/) && !el.tracked) {
       threads.push({
         id: el.id,
-        lastCommentId: el.id,
-      });
-      el.tracked = true;
+        lastCommentId: el.id
+      })
+      el.tracked = true
     }
-  });
+  })
 
-  return threads;
-};
+  return threads
+}
 
 const setListeners = () => {
-  const allComments = findAllComments();
-  console.log(`Invoked at: ${(new Date).getTime()/1000} with ${allComments.length} items`);
+  const allComments = findAllComments()
+  console.log(`Invoked at: ${(new Date()).getTime() / 1000} with ${allComments.length} items`)
   allComments.forEach(comment => {
     commentRef(comment.id).on('value', snapshot => {
-      const val = snapshot.val();
+      const val = snapshot.val()
       if (val) {
-        comment.resolved = val.resolved && val.lastCommentSeen === comment.lastCommentId;
-        comment.lastCommentSeen = val.lastCommentSeen;
+        comment.resolved = val.resolved && val.lastCommentSeen === comment.lastCommentId
+        comment.lastCommentSeen = val.lastCommentSeen
       }
-      updateThread(comment);
-      expandUnresolvedThread(comment);
-      updateMergeButton(allComments.some(info => !info.resolved));
-    });
-  });
-};
+      updateThread(comment)
+      expandUnresolvedThread(comment)
+      updateMergeButton(allComments.some(info => !info.resolved))
+    })
+  })
+}
 
 const main = () => {
-  initFirebase();
-  setListeners();
+  initFirebase()
+  setListeners()
 
   Rx.Observable.create((observer) => {
-    observer.next();
+    observer.next()
     new MutationObserver(() => observer.next()).observe(
-        document.getElementById('discussion_bucket'),
-        {childList: true, attributes: false, characterData: false, subtree: true});
-  }).debounceTime(500).subscribe(setListeners);
-};
+      document.getElementById('discussion_bucket'),
+      {childList: true, attributes: false, characterData: false, subtree: true})
+  }).debounceTime(500).subscribe(setListeners)
+}
 
-const expandUnresolvedThread =  (info) => {
+const expandUnresolvedThread = (info) => {
   if (!info.resolved) {
-    const id = info.id;
-    const elem = $('#' + id).first();
-    const container = elem.parents('.outdated-comment');
+    const id = info.id
+    const elem = $('#' + id).first()
+    const container = elem.parents('.outdated-comment')
     if (container.length > 0) {
-      container.removeClass('closed').addClass('open');
+      container.removeClass('closed').addClass('open')
     }
   }
-};
+}
 
 const updateMergeButton = (unresolved) => {
-  $('.comment-track-status').remove();
-  if (unresolved)
+  $('.comment-track-status').remove()
+  if (unresolved) {
     findMergeButton().insertAdjacentHTML('beforebegin',
       `<div class="branch-action-item comment-track-status">
           <div class="branch-action-item-icon completeness-indicator completeness-indicator-problem">
@@ -84,76 +84,76 @@ const updateMergeButton = (unresolved) => {
               See above for red unresolved comments
             </span>
         </div>`
-    );
-};
+    )
+  }
+}
 
 const findMergeButton = () => {
-  const mergeabilityDetailsDivs = document.getElementsByClassName('mergeability-details');
+  const mergeabilityDetailsDivs = document.getElementsByClassName('mergeability-details')
   if (mergeabilityDetailsDivs.length > 0) {
-    const mergeMessageDivs = mergeabilityDetailsDivs[0].getElementsByClassName('merge-message');
-    if (mergeMessageDivs.length > 0)
-      return mergeMessageDivs[0];
+    const mergeMessageDivs = mergeabilityDetailsDivs[0].getElementsByClassName('merge-message')
+    if (mergeMessageDivs.length > 0) { return mergeMessageDivs[0] }
   }
-  return null;
-};
+  return null
+}
 
 const updateInfo = (info, resolved, lastCommentSeen) => {
-  commentRef(info.id).set({resolved, lastCommentSeen});
-  info.resolved = resolved;
-  updateThread(info);
-};
+  commentRef(info.id).set({resolved, lastCommentSeen})
+  info.resolved = resolved
+  updateThread(info)
+}
 
 const makeButton = (elem, info) => {
-  const e = $(elem);
-  e.find('.comment-track-action').remove();
+  const e = $(elem)
+  e.find('.comment-track-action').remove()
 
-  let actionSelector = '.review-comment-contents';
+  let actionSelector = '.review-comment-contents'
   if (e.find(actionSelector).length === 0) {
-    actionSelector = '.timeline-comment-actions';
+    actionSelector = '.timeline-comment-actions'
   }
 
   if (info.resolved) {
-    e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-unresolve"></span>');
+    e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-unresolve"></span>')
     e.find('.comment-track-unresolve').on('click', function (event) {
-      event.preventDefault();
-      updateInfo(info, false, null);
-    });
+      event.preventDefault()
+      updateInfo(info, false, null)
+    })
   } else {
-    e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-resolve"></span>');
+    e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-resolve"></span>')
     e.find('.comment-track-resolve').on('click', function (event) {
-      event.preventDefault();
-      updateInfo(info, true, info.lastCommentId);
-    });
+      event.preventDefault()
+      updateInfo(info, true, info.lastCommentId)
+    })
   }
-};
+}
 
 const updateThread = (info) => {
-  const id = info.id;
-  const elem = $('#' + id).first();
+  const id = info.id
+  const elem = $('#' + id).first()
 
   if (!id.match(/^issuecomment/)) {
-    const threadComments = $(elem).parents('.js-comments-holder').children('.js-comment');
+    const threadComments = $(elem).parents('.js-comments-holder').children('.js-comment')
     threadComments.each(function () {
-      makeButton(this, info);
-    });
+      makeButton(this, info)
+    })
   } else {
-    makeButton(elem, info);
+    makeButton(elem, info)
   }
-};
+}
 
-const commentRef = function(commentId) {
-  return firebase.database().ref('testing_zone/' + commentId);
-};
+const commentRef = function (commentId) {
+  return firebase.database().ref('testing_zone/' + commentId)
+}
 
 const initFirebase = () => {
   firebase.initializeApp({
-    apiKey: "AIzaSyBb_2bG5cUaW25MfCdaDP7l5HF8UbF2QR0",
-    authDomain: "ghct-79a7b.firebaseapp.com",
-    databaseURL: "https://ghct-79a7b.firebaseio.com",
-    projectId: "ghct-79a7b",
-    storageBucket: "ghct-79a7b.appspot.com",
-    messagingSenderId: "45909398186"
-  });
-};
+    apiKey: 'AIzaSyBb_2bG5cUaW25MfCdaDP7l5HF8UbF2QR0',
+    authDomain: 'ghct-79a7b.firebaseapp.com',
+    databaseURL: 'https://ghct-79a7b.firebaseio.com',
+    projectId: 'ghct-79a7b',
+    storageBucket: 'ghct-79a7b.appspot.com',
+    messagingSenderId: '45909398186'
+  })
+}
 
-main();
+main()
