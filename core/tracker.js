@@ -1,41 +1,42 @@
 
+const updateComment = (id, resolved) => {
+  updateThread(id, resolved)
+  if (!resolved) expandUnresolvedThread(id)
+  const unresolvedCommentCount = document.getElementById('discussion_bucket')
+    .getElementsByClassName('comment-track-resolve').length
+  updateMergeButton(unresolvedCommentCount > 0)
+}
+
+const commentListener = snapshot => {
+  const id = snapshot.key
+  const resolved = !!snapshot.child('resolved').val()
+  updateComment(id, resolved)
+}
+
 const setListeners = () => {
   const discussionBucket = document.getElementById('discussion_bucket')
+  if (!discussionBucket)
+    return;
+
   const discussionThreads = discussionBucket.querySelectorAll('.js-line-comments > .js-comments-holder')
   const issueComments = discussionBucket.querySelectorAll('.timeline-comment-wrapper > .timeline-comment.js-comment')
 
   discussionThreads.forEach((el) => {
     const comments = el.getElementsByClassName('js-comment')
     if (comments.length > 0 && el.tracked !== comments.length) {
-      const firstComment = comments[0]
-      const lastComment = comments[comments.length - 1]
-      hookComment(firstComment.id, lastComment.id)
+      const firstCommentId = comments[0].id
+      if (el.tracked > 0)
+        commentRef(firstCommentId).off('value', commentListener)
+      commentRef(firstCommentId).on('value', commentListener)
       el.tracked = comments.length
     }
   })
 
   issueComments.forEach((el) => {
     if (el.id && el.id.match(/^issuecomment/) && !el.tracked) {
-      hookComment(el.id, el.id)
+      commentRef(el.id).on('value', commentListener)
       el.tracked = true
     }
-  })
-}
-
-const hookComment = (id, lastCommentId) => {
-  commentRef(id).on('value', snapshot => {
-    const val = snapshot.val()
-    const resolved = val && val.resolved && val.lastCommentSeen === lastCommentId
-
-    updateThread(id, resolved, lastCommentId)
-
-    if (!resolved) {
-      expandUnresolvedThread(id)
-    }
-
-    const unresolvedCommentCount = document.getElementById('discussion_bucket')
-      .getElementsByClassName('comment-track-resolve').length
-    updateMergeButton(unresolvedCommentCount > 0)
   })
 }
 
@@ -45,8 +46,7 @@ const main = () => {
 
   Rx.Observable.create((observer) => {
     observer.next()
-    new MutationObserver(() => observer.next()).observe(
-      document.getElementById('discussion_bucket'),
+    new MutationObserver(() => observer.next()).observe(document.body,
       {childList: true, attributes: false, characterData: false, subtree: true})
   }).debounceTime(500).subscribe(setListeners)
 }
@@ -85,7 +85,7 @@ const findMergeButton = () => {
   return null
 }
 
-const makeButton = (elem, id, resolved, lastCommentSeen) => {
+const makeButton = (elem, id, resolved) => {
   const e = $(elem)
   e.find('.comment-track-action').remove()
 
@@ -98,27 +98,27 @@ const makeButton = (elem, id, resolved, lastCommentSeen) => {
     e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-unresolve"></span>')
     e.find('.comment-track-unresolve').on('click', function (event) {
       event.preventDefault()
-      commentRef(id).set({resolved: false, lastCommentSeen: null})
+      commentRef(id).set({resolved: false})
     })
   } else {
     e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-resolve"></span>')
     e.find('.comment-track-resolve').on('click', function (event) {
       event.preventDefault()
-      commentRef(id).set({resolved: true, lastCommentSeen})
+      commentRef(id).set({resolved: true})
     })
   }
 }
 
-const updateThread = (id, resolved, lastCommentSeen) => {
+const updateThread = (id, resolved) => {
   const elem = $('#' + id).first()
 
   if (!id.match(/^issuecomment/)) {
     const threadComments = $(elem).parents('.js-comments-holder').children('.js-comment')
     threadComments.each(function () {
-      makeButton(this, id, resolved, lastCommentSeen)
+      makeButton(this, id, resolved)
     })
   } else {
-    makeButton(elem, id, resolved, lastCommentSeen)
+    makeButton(elem, id, resolved)
   }
 }
 
