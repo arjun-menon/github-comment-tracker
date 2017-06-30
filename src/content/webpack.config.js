@@ -1,10 +1,10 @@
 var path = require('path');
 
 module.exports = {
-  entry: './src/content.js',
+  entry: './ghct-content.js',
   output: {
     filename: 'ghct-content.js',
-    path: path.resolve(__dirname, 'dist')
+    path: path.resolve('../..', 'dist')
   },
   module: {
     rules: [

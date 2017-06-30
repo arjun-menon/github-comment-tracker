@@ -2,7 +2,7 @@ import $ from 'jquery'
 import * as firebase from 'firebase/app'
 import 'firebase/database'
 import Rx from 'rxjs/Rx'
-import './content.css'
+import './ghct-content.css'
 
 const updateComment = (id, resolved) => {
   updateThread(id, resolved)
