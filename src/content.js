@@ -66,8 +66,9 @@ const expandUnresolvedThread = id => {
 
 const updateMergeButton = (unresolved) => {
   $('.comment-track-status').remove()
-  if (unresolved) {
-    findMergeButton().insertAdjacentHTML('beforebegin',
+  const mergeButton = findMergeButton()
+  if (unresolved && mergeButton) {
+    mergeButton.insertAdjacentHTML('beforebegin',
       `<div class="branch-action-item comment-track-status">
           <div class="branch-action-item-icon completeness-indicator completeness-indicator-problem">
             <svg aria-hidden="true" class="octicon octicon-alert" height="16" role="img" version="1.1" viewBox="0 0 16 16" width="16"><path d="M15.72 12.5l-6.85-11.98C8.69 0.21 8.36 0.02 8 0.02s-0.69 0.19-0.87 0.5l-6.85 11.98c-0.18 0.31-0.18 0.69 0 1C0.47 13.81 0.8 14 1.15 14h13.7c0.36 0 0.69-0.19 0.86-0.5S15.89 12.81 15.72 12.5zM9 12H7V10h2V12zM9 9H7V5h2V9z"></path></svg>
