@@ -1,7 +1,4 @@
 {
-  "name": "github-comment-tracker",
-  "version": "1.2.0",
-  "license": "MIT",
   "scripts": {
     "build": "webpack"
   },
