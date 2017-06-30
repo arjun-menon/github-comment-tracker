@@ -16,7 +16,6 @@
 
   "content_scripts": [{
     "matches": ["*://github.com/*/pull*"],
-    "js": ["ghct-content.js"],
-    "css": ["ghct-content.css"]
+    "js": ["ghct-content.js"]
   }]
 }
