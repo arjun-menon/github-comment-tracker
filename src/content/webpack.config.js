@@ -1,4 +1,4 @@
-var path = require('path');
+var path = require('path')
 
 module.exports = {
   entry: './ghct-content.js',
@@ -17,4 +17,4 @@ module.exports = {
       }
     ]
   }
-};
+}

@@ -1,4 +1,4 @@
-var path = require('path');
+var path = require('path')
 
 module.exports = {
   entry: './ghct-background.js',
@@ -6,4 +6,4 @@ module.exports = {
     filename: 'ghct-background.js',
     path: path.resolve('../..', 'dist')
   }
-};
+}

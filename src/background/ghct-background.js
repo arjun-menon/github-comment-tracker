@@ -10,7 +10,7 @@ firebase.initializeApp({
   messagingSenderId: '45909398186'
 })
 
-const browser = chrome || browser
+const browser = chrome || browser // eslint-disable-line no-use-before-define
 
 browser.runtime.onConnect.addListener(port => {
   const path = 'testing_zone/' + port.name

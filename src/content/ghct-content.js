@@ -2,17 +2,21 @@ import $ from 'jquery'
 import Rx from 'rxjs/Rx'
 import './ghct-content.css'
 
-const browser = chrome || browser
+const browser = chrome || browser // eslint-disable-line no-use-before-define
+
 const ports = {}
+
 const listenOn = (id, callback) => {
-  if (!ports.hasOwnProperty(id))
+  if (!ports.hasOwnProperty(id)) {
     ports[id] = browser.runtime.connect({name: id})
+  }
   ports[id].onMessage.addListener(m => { callback(m) })
 }
+
 const setVal = (id, val) => {
-  if (ports.hasOwnProperty(id))
-    ports[id].postMessage(val)
+  if (ports.hasOwnProperty(id)) ports[id].postMessage(val)
 }
+
 const disconnect = id => {
   if (ports.hasOwnProperty(id)) {
     ports[id].disconnect()
@@ -39,8 +43,7 @@ const setListeners = () => {
     const comments = el.getElementsByClassName('js-comment')
     if (comments.length > 0 && el.tracked !== comments.length) {
       const firstCommentId = comments[0].id
-      if (el.tracked > 0)
-        disconnect(firstCommentId)
+      if (el.tracked > 0) { disconnect(firstCommentId) }
       listenOn(firstCommentId, updateComment)
       el.tracked = comments.length
     }
