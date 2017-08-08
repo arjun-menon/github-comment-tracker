@@ -1,10 +1,26 @@
 import $ from 'jquery'
-import * as firebase from 'firebase/app'
-import 'firebase/database'
 import Rx from 'rxjs/Rx'
 import './ghct-content.css'
 
-const updateComment = (id, resolved) => {
+const browser = chrome || browser
+const ports = {}
+const listenOn = (id, callback) => {
+  if (!ports.hasOwnProperty(id))
+    ports[id] = browser.runtime.connect({name: id})
+  ports[id].onMessage.addListener(m => { callback(m) })
+}
+const setVal = (id, val) => {
+  if (ports.hasOwnProperty(id))
+    ports[id].postMessage(val)
+}
+const disconnect = id => {
+  if (ports.hasOwnProperty(id)) {
+    ports[id].disconnect()
+    delete ports[id]
+  }
+}
+
+const updateComment = ({id, resolved}) => {
   updateThread(id, resolved)
   if (!resolved) expandUnresolvedThread(id)
   const unresolvedCommentCount = document.getElementById('discussion_bucket')
@@ -12,16 +28,9 @@ const updateComment = (id, resolved) => {
   updateMergeButton(unresolvedCommentCount > 0)
 }
 
-const commentListener = snapshot => {
-  const id = snapshot.key
-  const resolved = !!snapshot.child('resolved').val()
-  updateComment(id, resolved)
-}
-
 const setListeners = () => {
   const discussionBucket = document.getElementById('discussion_bucket')
-  if (!discussionBucket)
-    return;
+  if (!discussionBucket) return
 
   const discussionThreads = discussionBucket.querySelectorAll('.js-line-comments > .js-comments-holder')
   const issueComments = discussionBucket.querySelectorAll('.timeline-comment-wrapper > .timeline-comment.js-comment')
@@ -31,22 +40,21 @@ const setListeners = () => {
     if (comments.length > 0 && el.tracked !== comments.length) {
       const firstCommentId = comments[0].id
       if (el.tracked > 0)
-        commentRef(firstCommentId).off('value', commentListener)
-      commentRef(firstCommentId).on('value', commentListener)
+        disconnect(firstCommentId)
+      listenOn(firstCommentId, updateComment)
       el.tracked = comments.length
     }
   })
 
   issueComments.forEach((el) => {
     if (el.id && el.id.match(/^issuecomment/) && !el.tracked) {
-      commentRef(el.id).on('value', commentListener)
+      listenOn(el.id, updateComment)
       el.tracked = true
     }
   })
 }
 
 const main = () => {
-  initFirebase()
   setListeners()
 
   Rx.Observable.create((observer) => {
@@ -104,13 +112,13 @@ const makeButton = (elem, id, resolved) => {
     e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-unresolve"></span>')
     e.find('.comment-track-unresolve').on('click', function (event) {
       event.preventDefault()
-      commentRef(id).set({resolved: false})
+      setVal(id, {resolved: false})
     })
   } else {
     e.find(actionSelector).prepend('<span class="octicon comment-track-action comment-track-resolve"></span>')
     e.find('.comment-track-resolve').on('click', function (event) {
       event.preventDefault()
-      commentRef(id).set({resolved: true})
+      setVal(id, {resolved: true})
     })
   }
 }
@@ -126,21 +134,6 @@ const updateThread = (id, resolved) => {
   } else {
     makeButton(elem, id, resolved)
   }
-}
-
-const commentRef = function (commentId) {
-  return firebase.database().ref('testing_zone/' + commentId)
-}
-
-const initFirebase = () => {
-  firebase.initializeApp({
-    apiKey: 'AIzaSyBb_2bG5cUaW25MfCdaDP7l5HF8UbF2QR0',
-    authDomain: 'ghct-79a7b.firebaseapp.com',
-    databaseURL: 'https://ghct-79a7b.firebaseio.com',
-    projectId: 'ghct-79a7b',
-    storageBucket: 'ghct-79a7b.appspot.com',
-    messagingSenderId: '45909398186'
-  })
 }
 
 main()
