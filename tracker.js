@@ -6,7 +6,6 @@
 // Other file forwarders
 var Parse;
 var waitForKeyElements;
-var unresolvedCommentsMap = {};
 
 var findAllThreads = function () {
   var threads = [];
@@ -31,14 +30,6 @@ var findAllThreads = function () {
         lastCommentId: this.id,
       });
     }
-  });
-
-  $('#files .review-comment').each(function () {
-    threads.push({
-      id: this.id,
-      comments: $(this),
-      lastCommentId: this.id,
-    });
   });
 
   return threads;
@@ -143,16 +134,7 @@ var updateMergeButton = function () {
     }
   } else {
     if (!allThreadsResolved()) {
-
-      //map to array of values
-      var unresolvedCommentsArray = []
-      for (var key in unresolvedCommentsMap) {
-        if (unresolvedCommentsMap.hasOwnProperty(key)) {
-          unresolvedCommentsArray.push(unresolvedCommentsMap[key])
-        }
-      }
-
-      var commentStatus =
+      $('.merge-message').before(
         '<div class="branch-action-item comment-track-status">' +
         '    <div class="branch-action-item-icon completeness-indicator completeness-indicator-problem">' +
         '      <svg aria-hidden="true" class="octicon octicon-alert" height="16" role="img" version="1.1" viewBox="0 0 16 16" width="16"><path d="M15.72 12.5l-6.85-11.98C8.69 0.21 8.36 0.02 8 0.02s-0.69 0.19-0.87 0.5l-6.85 11.98c-0.18 0.31-0.18 0.69 0 1C0.47 13.81 0.8 14 1.15 14h13.7c0.36 0 0.69-0.19 0.86-0.5S15.89 12.81 15.72 12.5zM9 12H7V10h2V12zM9 9H7V5h2V9z"></path></svg>' +
@@ -161,14 +143,8 @@ var updateMergeButton = function () {
         '      <span class="status-meta">' +
         '        See above for red unresolved comments' +
         '      </span>' +
-        '      <lu><li>' + unresolvedCommentsArray.join('</li><li>') + "</li></lu>" +
-        '  </div>';
-
-      //discussions tab
-      $('.merge-message').before(commentStatus);
-
-      //files tab
-      $('#files').after(commentStatus);
+        '  </div>'
+      );
     }
   }
 };
@@ -199,7 +175,6 @@ var makeButton = function (elem, threadInfo) {
   if ($elem.find(actionSelector).length === 0) {
     actionSelector = '.timeline-comment-actions';
   }
-  delete unresolvedCommentsMap[threadInfo.id];
 
   var string;
   if (threadInfo.resolved) {
@@ -220,11 +195,6 @@ var makeButton = function (elem, threadInfo) {
   } else {
     string = '<span class="octicon comment-track-action comment-track-resolve"></span>';
     $elem.find(actionSelector).prepend(string);
-
-    var content = $elem.find(actionSelector)[0].innerText.trim();
-    if (content != "") {
-      unresolvedCommentsMap[threadInfo.id] = content;
-    }
 
     $elem.find('.comment-track-resolve').on('click', function (event) {
       event.preventDefault();

@@ -3,7 +3,7 @@
 
   "name": "Github Comment Tracker",
   "description": "Tracks resolved / unresolved state of comments on github pull requests",
-  "version": "1.1.8",
+  "version": "1.1.6",
 
   "permissions": [
     "https://github.com/",
@@ -16,9 +16,5 @@
     "css": ["main.css"]
   }],
 
-  "options_page": "options.html",
-  "options_ui": {
-    "chrome_style": true,
-    "page": "options.html"
-  }
+  "options_page": "options.html"
 }
